@@ -59,10 +59,24 @@ fi
     echo "-- Top 5 by CPU --"
     ps -A -o %cpu=,pid=,comm= -r | head -5
     
-    # Top memory consumers  
+    # Top memory consumers
     echo "-- Top 5 by Memory --"
     ps -A -o %mem=,pid=,comm= -m | head -5
-    
+
+    # SMB daemon monitoring (catches runaway file sharing)
+    echo "-- SMB Status --"
+    smbd_info=$(ps -A -o %cpu=,pid=,comm= | grep smbd | grep -v grep)
+    if [[ -n "$smbd_info" ]]; then
+        echo "$smbd_info"
+        # Alert threshold: smbd using more than 50% CPU
+        smbd_cpu=$(echo "$smbd_info" | awk '{print int($1)}')
+        if (( smbd_cpu > 50 )); then
+            echo "WARNING: smbd CPU usage high ($smbd_cpu%)"
+        fi
+    else
+        echo "smbd not running"
+    fi
+
     # Load average
     echo "-- Load Average --"
     uptime
